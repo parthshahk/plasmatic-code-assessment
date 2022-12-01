@@ -36,7 +36,7 @@ app.get("/users", async function (req, res) {
 	const { userId, name } = req.body;
 
 	try {
-		res.json({ userId, name, url: req.url, iteration: 1 });
+		res.json({ userId, name, url: req.url, iteration: 2 });
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ error: "Could not create user" });
