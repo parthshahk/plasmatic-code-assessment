@@ -1,10 +1,14 @@
 service: petstore
 frameworkVersion: "3"
 
+plugins:
+    - serverless-offline
+
 custom:
     pets: "pets-${sls:stage}"
     orders: "orders-${sls:stage}"
     inventory: "inventory-${sls:stage}"
+    petCategories: "petCategories-${sls:stage}"
 
 provider:
     name: aws
@@ -26,6 +30,12 @@ provider:
                       - Fn::GetAtt: [InventoryTable, Arn]
                       - Fn::GetAtt: [OrderTable, Arn]
                       - Fn::GetAtt: [PetTable, Arn]
+                      - Fn::GetAtt: [PetCategoryTable, Arn]
+    environment:
+        INVENTORY_TABLE: ${self:custom.inventory}
+        ORDER_TABLE: ${self:custom.orders}
+        PET_TABLE: ${self:custom.pets}
+        PET_CATEGORY_TABLE: ${self:custom.petCategories}
 
 functions:
     pet:
@@ -48,7 +58,7 @@ resources:
             Properties:
                 AttributeDefinitions:
                     - AttributeName: id
-                      AttributeType: N
+                      AttributeType: S
                 KeySchema:
                     - AttributeName: id
                       KeyType: HASH
@@ -59,7 +69,7 @@ resources:
             Properties:
                 AttributeDefinitions:
                     - AttributeName: id
-                      AttributeType: N
+                      AttributeType: S
                 KeySchema:
                     - AttributeName: id
                       KeyType: HASH
@@ -70,9 +80,20 @@ resources:
             Properties:
                 AttributeDefinitions:
                     - AttributeName: id
-                      AttributeType: N
+                      AttributeType: S
                 KeySchema:
                     - AttributeName: id
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
                 TableName: ${self:custom.inventory}
+        PetCategoryTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                AttributeDefinitions:
+                    - AttributeName: id
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: id
+                      KeyType: HASH
+                BillingMode: PAY_PER_REQUEST
+                TableName: ${self:custom.petCategories}

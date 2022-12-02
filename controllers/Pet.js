@@ -1,11 +1,18 @@
+const Model = require("../models/Pet");
+
 // Pet Controller
 class PetController {
-	static async sample(req, res) {
+	static async create(req, res) {
 		try {
+			const pet = req.body;
+			const petId = await Model.create(pet);
+
 			res.status(201).json({
 				status: "success",
-				url: req.url,
-				iteration: 1,
+				message: "Pet created successfully",
+				data: {
+					petId,
+				},
 			});
 		} catch (error) {
 			// Catch any errors
