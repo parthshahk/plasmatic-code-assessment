@@ -1,9 +1,10 @@
-service: api
+service: petstore
 frameworkVersion: "3"
 
 custom:
-    tableName: "users-table-${sls:stage}"
-    tableName2: "users2-table-${sls:stage}"
+    pets: "pets-${sls:stage}"
+    orders: "orders-${sls:stage}"
+    inventory: "inventory-${sls:stage}"
 
 provider:
     name: aws
@@ -22,9 +23,9 @@ provider:
                       - dynamodb:UpdateItem
                       - dynamodb:DeleteItem
                   Resource:
-                      - Fn::GetAtt: [UsersTable, Arn]
-    environment:
-        USERS_TABLE: ${self:custom.tableName}
+                      - Fn::GetAtt: [InventoryTable, Arn]
+                      - Fn::GetAtt: [OrderTable, Arn]
+                      - Fn::GetAtt: [PetTable, Arn]
 
 functions:
     pet:
@@ -42,25 +43,36 @@ functions:
 
 resources:
     Resources:
-        UsersTable:
+        PetTable:
             Type: AWS::DynamoDB::Table
             Properties:
                 AttributeDefinitions:
-                    - AttributeName: userId
-                      AttributeType: S
+                    - AttributeName: id
+                      AttributeType: N
                 KeySchema:
-                    - AttributeName: userId
+                    - AttributeName: id
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
-                TableName: ${self:custom.tableName}
-        UsersTable2:
+                TableName: ${self:custom.pets}
+        OrderTable:
             Type: AWS::DynamoDB::Table
             Properties:
                 AttributeDefinitions:
-                    - AttributeName: userId
-                      AttributeType: S
+                    - AttributeName: id
+                      AttributeType: N
                 KeySchema:
-                    - AttributeName: userId
+                    - AttributeName: id
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
-                TableName: ${self:custom.tableName2}
+                TableName: ${self:custom.orders}
+        InventoryTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                AttributeDefinitions:
+                    - AttributeName: id
+                      AttributeType: N
+                KeySchema:
+                    - AttributeName: id
+                      KeyType: HASH
+                BillingMode: PAY_PER_REQUEST
+                TableName: ${self:custom.inventory}
