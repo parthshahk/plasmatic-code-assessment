@@ -1,6 +1,6 @@
 // Store Controller
 class StoreController {
-	static async sample(req, res) {
+	static async order(req, res) {
 		try {
 			res.status(201).json({
 				status: "success",
