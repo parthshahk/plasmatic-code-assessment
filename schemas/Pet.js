@@ -25,6 +25,18 @@ class Pet {
 			fileType: joi.string().required(),
 		});
 	}
+
+	static getPetSchema() {
+		return joi.object({
+			id: joi.string().required(),
+		});
+	}
+
+	static findByStatusSchema() {
+		return joi.object({
+			status: joi.string().required(),
+		});
+	}
 }
 
 module.exports = Pet;
