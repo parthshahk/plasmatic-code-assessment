@@ -1,11 +1,19 @@
+const Model = require("../models/Store");
+const { v4: uuidv4 } = require("uuid");
+
 // Store Controller
 class StoreController {
 	static async order(req, res) {
 		try {
+			const order = req.body;
+			const orderId = await Model.order(order);
+
 			res.status(201).json({
 				status: "success",
-				url: req.url,
-				iteration: 1,
+				message: "Order created successfully",
+				data: {
+					orderId,
+				},
 			});
 		} catch (error) {
 			// Catch any errors
