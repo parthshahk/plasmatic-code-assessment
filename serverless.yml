@@ -27,10 +27,18 @@ provider:
         USERS_TABLE: ${self:custom.tableName}
 
 functions:
-    api:
+    pet:
         handler: handler.handler
         events:
-            - httpApi: "*"
+            - httpApi:
+                  path: /pet/{any+}
+                  method: ANY
+    store:
+        handler: handler.handler
+        events:
+            - httpApi:
+                  path: /store/{any+}
+                  method: ANY
 
 resources:
     Resources:

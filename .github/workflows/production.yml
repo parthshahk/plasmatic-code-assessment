@@ -3,7 +3,7 @@ name: Deploy development branch
 on:
     push:
         branches:
-            - development
+            - production
 
 jobs:
     deploy:
@@ -19,7 +19,7 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - name: serverless deploy
+            - name: serverless deploy --stage prod
               uses: serverless/github-action@v3.1
               with:
                   args: deploy

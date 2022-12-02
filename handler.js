@@ -1,52 +1,36 @@
-const AWS = require("aws-sdk");
 const express = require("express");
 const serverless = require("serverless-http");
+const Pet = require("./routes/Pet");
+const Store = require("./routes/Store");
 
 const app = express();
 
-const USERS_TABLE = process.env.USERS_TABLE;
-const dynamoDbClient = new AWS.DynamoDB.DocumentClient();
-
+// Middlewares
 app.use(express.json());
 
-app.get("/users/:userId", async function (req, res) {
-	const params = {
-		TableName: USERS_TABLE,
-		Key: {
-			userId: req.params.userId,
-		},
-	};
+// Routes
+app.use("/pet", Pet);
+app.use("/store", Store);
 
-	try {
-		const { Item } = await dynamoDbClient.get(params).promise();
-		if (Item) {
-			const { userId, name } = Item;
-			console.log("Item", Item);
-			res.json({ userId, name });
-		} else {
-			res.status(404).json({ error: 'Could not find user with provided "userId"' });
-		}
-	} catch (error) {
-		console.log(error);
-		res.status(500).json({ error: "Could not retreive user" });
-	}
-});
-
-app.get("/users", async function (req, res) {
-	const { userId, name } = req.body;
-
-	try {
-		res.json({ userId, name, url: req.url, iteration: 2 });
-	} catch (error) {
-		console.log(error);
-		res.status(500).json({ error: "Could not create user" });
-	}
-});
-
+// Default route
 app.use((req, res, next) => {
 	return res.status(404).json({
-		error: "Not Found",
+		error: "Route not found",
+		route: req.url,
 	});
 });
 
-module.exports.handler = serverless(app);
+/* Global Error handler middleware */
+app.use((err, req, res, next) => {
+	const statusCode = err.statusCode || 500;
+	console.error(err.message, err.stack);
+	res.status(statusCode).json({ message: err.message });
+	return;
+});
+
+module.exports.handler = serverless(app, {
+	request: (req, event, context) => {
+		req.event = event;
+		req.context = context;
+	},
+});
