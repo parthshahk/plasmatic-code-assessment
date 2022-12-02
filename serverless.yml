@@ -9,7 +9,11 @@ custom:
     orders: "orders-${sls:stage}"
     inventory: "inventory-${sls:stage}"
     petCategories: "petCategories-${sls:stage}"
+    storageBucket: "petstore-${sls:stage}"
 
+package:
+    exclude:
+        - node_modules/**
 provider:
     name: aws
     runtime: nodejs14.x
@@ -31,11 +35,20 @@ provider:
                       - Fn::GetAtt: [OrderTable, Arn]
                       - Fn::GetAtt: [PetTable, Arn]
                       - Fn::GetAtt: [PetCategoryTable, Arn]
+                - Effect: Allow
+                  Action:
+                      - s3:PutObject
+                      - s3:GetObject
+                      - s3:DeleteObject
+                  Resource:
+                      - Fn::GetAtt: [StorageBucket, Arn]
+
     environment:
         INVENTORY_TABLE: ${self:custom.inventory}
         ORDER_TABLE: ${self:custom.orders}
         PET_TABLE: ${self:custom.pets}
         PET_CATEGORY_TABLE: ${self:custom.petCategories}
+        STORAGE_BUCKET: ${self:custom.storageBucket}
 
 functions:
     pet:
@@ -97,3 +110,7 @@ resources:
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
                 TableName: ${self:custom.petCategories}
+        StorageBucket:
+            Type: AWS::S3::Bucket
+            Properties:
+                BucketName: ${self:custom.storageBucket}
