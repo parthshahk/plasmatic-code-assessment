@@ -28,7 +28,8 @@ class Pet {
 				},
 			};
 			const result = await dynamoDb.get(params).promise();
-			// populate category
+
+			// populate category by category id
 			const categoryParams = {
 				TableName: process.env.PET_CATEGORY_TABLE,
 				Key: {
@@ -102,7 +103,7 @@ class Pet {
 			};
 			const result = await dynamoDb.scan(params).promise();
 
-			// populate category
+			// populate category by category id for each pet
 			for (let i = 0; i < result.Items.length; i++) {
 				const categoryParams = {
 					TableName: process.env.PET_CATEGORY_TABLE,

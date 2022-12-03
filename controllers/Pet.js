@@ -1,7 +1,11 @@
 const Model = require("../models/Pet");
-const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
-const S3_BUCKET = process.env.STORAGE_BUCKET;
+const log = require("lambda-log");
+const Utils = require("../utils/Utils");
+
+log.options.meta = {
+	context: "PetController",
+};
 
 // Pet Controller
 class PetController {
@@ -19,6 +23,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",
@@ -31,19 +36,11 @@ class PetController {
 		try {
 			const { fileName, fileType } = req.body;
 
-			const s3 = new AWS.S3();
-
+			// Generate a unique key for the file
 			const key = `images/${uuidv4()}-${fileName}`;
 
-			const s3Params = {
-				Bucket: S3_BUCKET,
-				Key: key,
-				Expires: 300,
-				ContentType: fileType,
-				ACL: "public-read",
-			};
-
-			const signedURL = await s3.getSignedUrlPromise("putObject", s3Params);
+			// Get signed url
+			const signedURL = await Utils.generateSignedURL(key, fileType, "put");
 
 			res.status(201).json({
 				status: "success",
@@ -55,6 +52,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",
@@ -70,17 +68,11 @@ class PetController {
 			const pet = await Model.get(id);
 
 			// Populate photoUrls with signed urls
-			const s3 = new AWS.S3();
-
+			// Generate signed urls for read
 			const signedURLs = await Promise.all(
+				// Map over the photoKeys array
 				pet.photoKeys.map(async (photoUrl) => {
-					const s3Params = {
-						Bucket: S3_BUCKET,
-						Key: photoUrl,
-						Expires: 300,
-					};
-
-					const signedURL = await s3.getSignedUrlPromise("getObject", s3Params);
+					const signedURL = await Utils.generateSignedURL(photoUrl, null, "get");
 
 					return signedURL;
 				})
@@ -97,6 +89,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",
@@ -109,7 +102,7 @@ class PetController {
 		try {
 			const pet = req.body;
 			const { id } = req.params;
-			const petId = await Model.update(id, pet);
+			await Model.update(id, pet);
 
 			res.status(201).json({
 				status: "success",
@@ -117,6 +110,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",
@@ -129,7 +123,7 @@ class PetController {
 		try {
 			const { id } = req.params;
 
-			const pet = await Model.delete(id);
+			await Model.delete(id);
 
 			res.status(200).json({
 				status: "success",
@@ -137,6 +131,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",
@@ -152,20 +147,14 @@ class PetController {
 			const pets = await Model.findByStatus(status);
 
 			// Populate photoUrls with signed urls
-
-			const s3 = new AWS.S3();
-
 			await Promise.all(
+				// Map over the pets array
 				pets.map(async (pet) => {
+					// Generate signed urls for read
 					const signedURLs = await Promise.all(
+						// Map over the photoKeys array
 						pet.photoKeys.map(async (photoUrl) => {
-							const s3Params = {
-								Bucket: S3_BUCKET,
-								Key: photoUrl,
-								Expires: 300,
-							};
-
-							const signedURL = await s3.getSignedUrlPromise("getObject", s3Params);
+							const signedURL = await Utils.generateSignedURL(photoUrl, null, "get");
 
 							return signedURL;
 						})
@@ -186,6 +175,7 @@ class PetController {
 			});
 		} catch (error) {
 			// Catch any errors
+			log.error(error);
 			res.status(400).json({
 				status: "fail",
 				message: "Something went wrong",

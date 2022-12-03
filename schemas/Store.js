@@ -10,6 +10,12 @@ class Store {
 			petId: joi.string().required(),
 		});
 	}
+
+	static getOrder() {
+		return joi.object({
+			id: joi.string().required(),
+		});
+	}
 }
 
 module.exports = Store;

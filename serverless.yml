@@ -7,13 +7,10 @@ plugins:
 custom:
     pets: "pets-${sls:stage}"
     orders: "orders-${sls:stage}"
-    inventory: "inventory-${sls:stage}"
     petCategories: "petCategories-${sls:stage}"
     storageBucket: "petstore-${sls:stage}"
+    sqsQueue: "petstore-${sls:stage}"
 
-# package:
-#     exclude:
-#         - node_modules/aws-sdk/**
 provider:
     name: aws
     runtime: nodejs14.x
@@ -31,7 +28,6 @@ provider:
                       - dynamodb:UpdateItem
                       - dynamodb:DeleteItem
                   Resource:
-                      - Fn::GetAtt: [InventoryTable, Arn]
                       - Fn::GetAtt: [OrderTable, Arn]
                       - Fn::GetAtt: [PetTable, Arn]
                       - Fn::GetAtt: [PetCategoryTable, Arn]
@@ -40,9 +36,13 @@ provider:
                       - s3:*
                   Resource:
                       - Fn::GetAtt: [StorageBucket, Arn]
+                - Effect: Allow
+                  Action:
+                      - sqs:*
+                  Resource:
+                      - Fn::GetAtt: [StorageQueue, Arn]
 
     environment:
-        INVENTORY_TABLE: ${self:custom.inventory}
         ORDER_TABLE: ${self:custom.orders}
         PET_TABLE: ${self:custom.pets}
         PET_CATEGORY_TABLE: ${self:custom.petCategories}
@@ -61,6 +61,13 @@ functions:
             - httpApi:
                   path: /store/{any+}
                   method: ANY
+    generateThumbnail:
+        handler: handler.generateThumbnail
+        events:
+            - sqs:
+                  arn:
+                      Fn::GetAtt: [StorageQueue, Arn]
+                  batchSize: 1
 
 resources:
     Resources:
@@ -86,17 +93,6 @@ resources:
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
                 TableName: ${self:custom.orders}
-        InventoryTable:
-            Type: AWS::DynamoDB::Table
-            Properties:
-                AttributeDefinitions:
-                    - AttributeName: id
-                      AttributeType: S
-                KeySchema:
-                    - AttributeName: id
-                      KeyType: HASH
-                BillingMode: PAY_PER_REQUEST
-                TableName: ${self:custom.inventory}
         PetCategoryTable:
             Type: AWS::DynamoDB::Table
             Properties:
@@ -108,7 +104,26 @@ resources:
                       KeyType: HASH
                 BillingMode: PAY_PER_REQUEST
                 TableName: ${self:custom.petCategories}
+        StorageQueue:
+            Type: AWS::SQS::Queue
+            Properties:
+                QueueName: ${self:custom.sqsQueue}
         StorageBucket:
             Type: AWS::S3::Bucket
             Properties:
                 BucketName: ${self:custom.storageBucket}
+        QueuePolicy:
+            Type: AWS::SQS::QueuePolicy
+            Properties:
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Principal: "*"
+                          Action: sqs:SendMessage
+                          Resource: !GetAtt StorageQueue.Arn
+                          Condition:
+                              ArnEquals:
+                                  aws:SourceArn: !GetAtt StorageBucket.Arn
+                Queues:
+                    - !Ref StorageQueue
